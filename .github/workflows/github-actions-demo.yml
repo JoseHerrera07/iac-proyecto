@@ -3,7 +3,56 @@ name: Github Actions demo
 run-name: ${{github.actor}} esta ejecutando un pipeline
 on: [push]
 
+
 jobs:
+  Validar-Proyecto:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Lint al proyecto con el comando npm run lint"
+      - run: echo "Pruebas unitarias con el comando npm test"
+ 
+  Validar-Proyecto-Sonar:
+    runs-on: ubuntu-latest
+    needs: Validar-Proyecto
+    steps:
+      - run: echo "Analizar con SonarQube el proyecto"
+ 
+  Construir-Proyecto:
+    runs-on: ubuntu-latest
+    needs: Validar-Proyecto-Sonar
+    steps:
+      - run: echo "Construir el frontend con el comando npm run build"
+      - run: echo "Empaquetar el backend de la API en un archivo zip"
+ 
+  Validar-Infraestructura:
+    runs-on: ubuntu-latest
+    needs: Validar-Proyecto
+    steps:
+      - run: echo "Validar el codigo de infraestructura con terraform validate"
+      - run: echo "Ver los cambios en AWS (VPC, ALB, EC2, RDS, Redis, SQS) con terraform plan"
+ 
+  Desplegar-Staging:
+    runs-on: ubuntu-latest
+    needs: [Construir-Proyecto, Validar-Infraestructura]
+    steps:
+      - run: echo "Desplegar en el ambiente de pruebas con terraform apply"
+      - run: echo "Probar la reserva de asientos y el pago con pruebas de integracion"
+ 
+  Desplegar-Produccion:
+    runs-on: ubuntu-latest
+    needs: Desplegar-Staging
+    steps:
+      - run: echo "Crear la infraestructura en AWS (Sao Paulo) con terraform apply"
+      - run: echo "Subir el frontend a S3 y limpiar la cache de CloudFront"
+      - run: echo "Actualizar las instancias EC2 del backend en el Auto Scaling Group"
+ 
+  Verificar-Produccion:
+    runs-on: ubuntu-latest
+    needs: Desplegar-Produccion
+    steps:
+      - run: echo "Probar que la pagina responde con curl al dominio"
+      - run: echo "Revisar alarmas en CloudWatch y avisar al equipo de TI con SNS"
+ 
   Saludar-Hello-World:
     runs-on: ubuntu-latest
     steps:
